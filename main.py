@@ -6,7 +6,6 @@ import csv
 import threading
 from pprint import pprint
 from concurrent.futures import ThreadPoolExecutor
-import concurrent.futures
 import random
 
 
@@ -34,7 +33,6 @@ def test_host(host):
     other = []
 
     host = host.exploded
-    host = "54.164.88.59"
 
     s = socket.socket()
     s.settimeout(3)
@@ -59,16 +57,19 @@ def test_host(host):
         other = list(set(err.allowed_types) - {"publickey", "password", "keyboard-interactive"})
 
         t.close()
+    except Exception as e:
+        return host[host, 1, 0, 0, 0]
+
     return [host, 1, publickey, password, keyboard_interactive, ":".join(other)]
 
 
 def ip_prefixes(ip_prefix, results_writer):
     pprint("hello")
-    i = 0
 
     hosts = list(ip_prefix.hosts())
+    pprint(len(hosts))
     random.shuffle(hosts)
-    pprint(hosts)
+    pprint(len(hosts))
 
     for host in hosts:
         result = test_host(host)
@@ -77,26 +78,23 @@ def ip_prefixes(ip_prefix, results_writer):
         with csv_writer_lock:
             results_writer.writerow(result)
 
-        i += 1
-        if i == 1:
-            break
-
 
 def main():
     prefixes = get_prefixes()
+    start_prefix_index = 1
+    end_prefix_index = 105
 
     with open('results.csv', 'w') as outfile:
         results_writer = csv.writer(outfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        i = 0
 
-        with ThreadPoolExecutor(max_workers=3) as executor:
-            i = 0
+        with ThreadPoolExecutor(max_workers=30) as executor:
+            i = 1
+
             for prefix in prefixes:
-                pprint("Hello")
-                executor.submit(ip_prefixes, prefix, results_writer)
+                if start_prefix_index <= i <= end_prefix_index:
+                    pprint("i: " + str(i) + "|Prefix: " + str(prefix))
+                    executor.submit(ip_prefixes, prefix, results_writer)
                 i += 1
-                if i == 1:
-                    break
 
             executor.shutdown(wait=True)
             print("End")

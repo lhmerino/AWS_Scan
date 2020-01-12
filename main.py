@@ -36,9 +36,6 @@ def get_hosts_from_prefixes(prefixes):
 
     return hosts
 
-
-
-
 def test_host(host):
     publickey = 0
     password = 0
@@ -46,7 +43,6 @@ def test_host(host):
     other = []
 
     host = host.exploded
-    host = "216.182.233.155"
 
     try:
         s = socket.socket()
@@ -83,12 +79,12 @@ def test_host(host):
 def host_run(host, results_writer):
     global csv_writer_lock, total
 
-    # result = test_host(host)
+    result = test_host(host)
 
     with csv_writer_lock:
         total += 1
         pprint(str(host))
-        #results_writer.writerow(result)
+        results_writer.writerow(result)
 
 def main():
     global total
@@ -104,7 +100,7 @@ def main():
         with ThreadPoolExecutor(max_workers=30) as executor:
 
             for i in range(len(hosts)):
-                if start_host_index <= i <= end_host_index:
+                if start_host_index <= i < end_host_index:
                     executor.submit(host_run, hosts[i], results_writer)
 
             executor.shutdown(wait=True)

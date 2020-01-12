@@ -85,7 +85,7 @@ def host_run(host):
 
     with csv_writer_lock:
         total += 1
-        pprint(str(host))
+        pprint(str(result))
         results_writer.writerow(result)
 
 def main():
@@ -96,6 +96,7 @@ def main():
     pprint("Number of hosts: " + str(len(hosts)))
     end_host_index = len(hosts)
     hosts = hosts[:11440973]
+    pprint("Number of hosts selected" + str(len(hosts)))
 
     with open('results.csv', 'w') as outfile:
         results_writer = csv.writer(outfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -107,7 +108,6 @@ def main():
             # executor.shutdown(wait=True)
 
         pool = multiprocessing.Pool()
-        #args = ((results_writer, host) for host in hosts)
         pool.map(host_run, hosts)
 
         print("End")

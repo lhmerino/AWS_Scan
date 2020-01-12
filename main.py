@@ -8,12 +8,14 @@ import csv
 import sys
 import threading
 from pprint import pprint
+import multiprocessing
 from concurrent.futures import ThreadPoolExecutor
 import random
 
 
 csv_writer_lock = threading.Lock()
 total = 0
+results_writer = None
 
 def get_prefixes():
     prefixes = []
@@ -76,10 +78,8 @@ def test_host(host):
     return [host, 1, publickey, password, keyboard_interactive, ":".join(other)]
 
 
-def host_run(args):
-    global csv_writer_lock, total
-
-    (results_writer, host) = args
+def host_run(host):
+    global csv_writer_lock, total, results_writer
 
     result = test_host(host)
 
@@ -89,25 +89,28 @@ def host_run(args):
         results_writer.writerow(result)
 
 def main():
-    global total
+    global total, results_writer
     prefixes = get_prefixes()
     hosts = get_hosts_from_prefixes(prefixes)
     start_host_index = 0
     pprint("Number of hosts: " + str(len(hosts)))
     end_host_index = len(hosts)
-    hosts = hosts[:10]
+    hosts = hosts[:11440973]
 
     with open('results.csv', 'w') as outfile:
         results_writer = csv.writer(outfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            args = ((results_writer, host) for host in hosts)
-            for _ in executor.map(host_run, args):
-                pass
+        #with ThreadPoolExecutor(max_workers=10) as executor:
+            #args = ((results_writer, host) for host in hosts)
+            #for _ in executor.map(host_run, args):
+            #   pass
+            # executor.shutdown(wait=True)
 
-            executor.shutdown(wait=True)
-            print("End")
+        pool = multiprocessing.Pool()
+        #args = ((results_writer, host) for host in hosts)
+        pool.map(host_run, hosts)
 
+        print("End")
         print("Total" + str(total))
 
 if __name__ == '__main__':

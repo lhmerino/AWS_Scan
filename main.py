@@ -1,8 +1,11 @@
+#!/usr/bin/env python3
+
 import json
 import ipaddress
 import paramiko
 import socket
 import csv
+import sys
 import threading
 from pprint import pprint
 from concurrent.futures import ThreadPoolExecutor
@@ -10,7 +13,7 @@ import random
 
 
 csv_writer_lock = threading.Lock()
-
+total = 0
 
 def get_prefixes():
     prefixes = []
@@ -25,6 +28,16 @@ def get_prefixes():
 
     return prefixes
 
+def get_hosts_from_prefixes(prefixes):
+
+    hosts = []
+    for prefix in prefixes:
+        hosts += list(prefix.hosts())
+
+    return hosts
+
+
+
 
 def test_host(host):
     publickey = 0
@@ -33,15 +46,16 @@ def test_host(host):
     other = []
 
     host = host.exploded
+    host = "216.182.233.155"
 
-    s = socket.socket()
-    s.settimeout(3)
     try:
+        s = socket.socket()
+        s.settimeout(3)
         s.connect((host, 22))
         t = paramiko.Transport(s)
         t.connect()
     except Exception as e:
-        s.close()
+        print("Caught exception 1:" + str(host) + ":" + str(e))
         return [host, 0, 0, 0, 0, ""]
 
     try:
@@ -58,46 +72,45 @@ def test_host(host):
 
         t.close()
     except Exception as e:
+        print("Caught exception 2:" + str(host) + ":" + str(e))
+        t.close()
+        print("Caught exception 3:" + str(host) + ":" + str(e))
         return host[host, 1, 0, 0, 0]
 
     return [host, 1, publickey, password, keyboard_interactive, ":".join(other)]
 
 
-def ip_prefixes(ip_prefix, results_writer):
-    pprint("hello")
+def host_run(host, results_writer):
+    global csv_writer_lock, total
 
-    hosts = list(ip_prefix.hosts())
-    pprint(len(hosts))
-    random.shuffle(hosts)
-    pprint(len(hosts))
+    # result = test_host(host)
 
-    for host in hosts:
-        result = test_host(host)
-        pprint(result)
-
-        with csv_writer_lock:
-            results_writer.writerow(result)
-
+    with csv_writer_lock:
+        total += 1
+        pprint(str(host))
+        #results_writer.writerow(result)
 
 def main():
+    global total
     prefixes = get_prefixes()
-    start_prefix_index = 1
-    end_prefix_index = 105
+    hosts = get_hosts_from_prefixes(prefixes)
+    start_host_index = 0
+    end_host_index = len(hosts)
 
     with open('results.csv', 'w') as outfile:
         results_writer = csv.writer(outfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
-        with ThreadPoolExecutor(max_workers=30) as executor:
-            i = 1
 
-            for prefix in prefixes:
-                if start_prefix_index <= i <= end_prefix_index:
-                    pprint("i: " + str(i) + "|Prefix: " + str(prefix))
-                    executor.submit(ip_prefixes, prefix, results_writer)
-                i += 1
+        with ThreadPoolExecutor(max_workers=30) as executor:
+
+            for i in range(len(hosts)):
+                if start_host_index <= i <= end_host_index:
+                    executor.submit(host_run, hosts[i], results_writer)
 
             executor.shutdown(wait=True)
             print("End")
+
+        print("Total" + str(total))
 
 if __name__ == '__main__':
     main()

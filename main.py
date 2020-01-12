@@ -76,8 +76,10 @@ def test_host(host):
     return [host, 1, publickey, password, keyboard_interactive, ":".join(other)]
 
 
-def host_run(host, results_writer):
+def host_run(args):
     global csv_writer_lock, total
+
+    (results_writer, host) = args
 
     result = test_host(host)
 
@@ -91,17 +93,17 @@ def main():
     prefixes = get_prefixes()
     hosts = get_hosts_from_prefixes(prefixes)
     start_host_index = 0
+    pprint("Number of hosts: " + str(len(hosts)))
     end_host_index = len(hosts)
+    hosts = hosts[:10]
 
     with open('results.csv', 'w') as outfile:
         results_writer = csv.writer(outfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
-
-        with ThreadPoolExecutor(max_workers=30) as executor:
-
-            for i in range(len(hosts)):
-                if start_host_index <= i < end_host_index:
-                    executor.submit(host_run, hosts[i], results_writer)
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            args = ((results_writer, host) for host in hosts)
+            for _ in executor.map(host_run, args):
+                pass
 
             executor.shutdown(wait=True)
             print("End")

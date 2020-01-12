@@ -73,7 +73,7 @@ def test_host(host):
         print("Caught exception 2:" + str(host) + ":" + str(e))
         t.close()
         print("Caught exception 3:" + str(host) + ":" + str(e))
-        return host[host, 1, 0, 0, 0]
+        return [host, 1, 0, 0, 0]
 
     return [host, 1, publickey, password, keyboard_interactive, ":".join(other)]
 

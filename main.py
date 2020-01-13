@@ -11,6 +11,7 @@ from pprint import pprint
 import multiprocessing
 from concurrent.futures import ThreadPoolExecutor
 import random
+import datetime
 
 
 csv_writer_lock = threading.Lock()
@@ -52,9 +53,10 @@ def test_host(host):
         s.connect((host, 22))
         t = paramiko.Transport(s)
         t.connect()
+    except paramiko.ssh_exception.SSHException as e:
+        return [host, 0, str(e), 0, 0, 0, ""]
     except Exception as e:
-        print("Caught exception 1:" + str(host) + ":" + str(e))
-        return [host, 0, 0, 0, 0, ""]
+        return [host, 0, str(e), 0, 0, 0, ""]
 
     try:
         t.auth_none('')
@@ -70,12 +72,13 @@ def test_host(host):
 
         t.close()
     except Exception as e:
-        print("Caught exception 2:" + str(host) + ":" + str(e))
-        t.close()
-        print("Caught exception 3:" + str(host) + ":" + str(e))
-        return [host, 1, 0, 0, 0]
+        try:
+            t.close()
+        except Exception as f:
+            pass
+        return [host, 1, str(e), 0, 0, 0]
 
-    return [host, 1, publickey, password, keyboard_interactive, ":".join(other)]
+    return [host, 1, "", publickey, password, keyboard_interactive, ":".join(other)]
 
 
 def host_run(host):
@@ -92,13 +95,14 @@ def main():
     global total, results_writer
     prefixes = get_prefixes()
     hosts = get_hosts_from_prefixes(prefixes)
-    start_host_index = 0
     pprint("Number of hosts: " + str(len(hosts)))
-    end_host_index = len(hosts)
     hosts = hosts[:11440973]
     pprint("Number of hosts selected" + str(len(hosts)))
 
-    with open('results.csv', 'w') as outfile:
+    time = datetime.datetime.now()
+    time = time.strftime("%Y_%m_%d_%H_%M_%S")
+
+    with open('results_' + time + '.csv', 'w') as outfile:
         results_writer = csv.writer(outfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
         #with ThreadPoolExecutor(max_workers=10) as executor:
